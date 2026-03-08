@@ -1,110 +1,58 @@
-# CapStone-Project: Automation Gen AI
+# CapStone-Project: Enterprise Automation Gen AI
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
-[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
-[![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?style=for-the-badge&logo=langchain&logoColor=white)](https://python.langchain.com/)
-[![Ollama](https://img.shields.io/badge/Ollama-000000?style=for-the-badge&logo=ollama&logoColor=white)](https://ollama.com/)
+An advanced, enterprise-ready Generative AI system specialized in Automation Engineering. This project leverages an Agentic RAG (Retrieval-Augmented Generation) architecture to provide refined, context-aware answers by combining local internal knowledge with real-time web search.
 
-An advanced Automation-focused Generative AI system designed to provide expert knowledge in Automation Engineering at KMITL. This project leverages an Agentic RAG (Retrieval-Augmented Generation) architecture to deliver accurate, refined, and context-aware answers.
+## 🌟 Key Features
 
-## 🚀 Key Features
+- **Agentic RAG Flow**: Sophisticated decision-making via LangGraph for document grading and retrieval.
+- **Enterprise Ready**: Centralized configuration (Pydantic), professional logging, and global error handling.
+- **Multi-Source Intelligence**: Integrates ChromaDB for internal RAG and Google/DuckDuckGo for web-enhanced answers.
+- **Automated Testing**: Comprehensive unit test suite covering core API logic.
+- **Modern Dashboard**: Real-time monitoring of system performance and LLM usage logs.
 
-- **Agentic RAG**: Implements a sophisticated LangGraph workflow for intelligent document retrieval and answer refinement.
-- **Multi-Source Knowledge**: Combines local vector database (ChromaDB) retrieval with live web searching (Google/DuckDuckGo) when local data is insufficient.
-- **Smart Grading**: Automatically evaluates the relevance of retrieved documents before generating answers.
-- **Integrated Dashboard**: Monitor system performance, query logs, and time usage.
-- **Document Management**: Manage and process knowledge source documents for the RAG system.
-- **Modern UI**: A responsive and intuitive frontend built with React and Vite.
+## 🏗️ System Architecture
 
-## 🏗️ Architecture
-
-The backend utilizes **LangGraph** to manage the AI's decision-making process:
-1. **Retrieval**: Searches the local vector store for relevant Automation Engineering documents.
-2. **Grading**: Uses an LLM to determine if the retrieved context is sufficient.
-3. **Web Search**: If context is missing, the agent triggers a web search (Google/DuckDuckGo).
-4. **Generation**: Synthesizes a comprehensive answer from all available sources.
-5. **Refinement**: Polishes the final response for clarity and technical accuracy.
-
-![Workflow](/imgs/Workflow.png)
-
-## 🛠️ Tech Stack
-
-- **Backend**: FastAPI, LangChain, LangGraph, Uvicorn, SQLAlchemy.
-- **Frontend**: React, Vite, Tailwind CSS (optional), NPM.
-- **AI/ML**: Ollama (Local Embeddings/LLMs), OpenTyphoon (Cloud LLM), Google Search API.
-- **Database**: SQLite (Logs/Management), ChromaDB (Vector Store).
-- **Environment**: UV (Fast Python package manager).
+The core of the system is an intelligent agent that dynamically decides between local knowledge and web search:
+1. **Retrieve**: Pulls context from the local vector database.
+2. **Grade**: Evaluates context relevance using an LLM.
+3. **Decide**: If context is sufficient, generate; otherwise, perform a web search.
+4. **Refine**: Polishes the final response for high technical accuracy.
 
 ## 📥 Getting Started
 
-### Prerequisites
+For detailed installation and configuration instructions, please refer to the **[Setup Guide](SETUP_GUIDE.md)**.
 
-- [Python 3.10+](https://www.python.org/downloads/)
-- [Node.js & NPM](https://nodejs.org/en)
-- [Ollama](https://ollama.com/download)
-- [UV](https://docs.astral.sh/uv/getting-started/installation/) (Recommended for backend)
-
-### 1. Clone the Repository
-
+### Quick Start (Development)
 ```bash
-git clone https://github.com/santapong/CapStone-Project.git
-cd CapStone-Project
-```
+# Backend
+uv sync
+PYTHONPATH=. uv run python capstone/backend/app.py
 
-### 2. Configure Environment Variables
-
-Create a `.env` file in the root directory based on `.envExample`:
-
-```env
-PYTHONPATH="."
-LANGSMITH_API_KEY="your_key"
-TYPHOON_API_KEY="your_key"
-GOOGLE_CSE_ID="your_google_custom_search_engine_id"
-GOOGLE_API_KEY="your_google_api_key"
-LLM_MODEL="typhoon-v1.5x-70b-instruct"
-MODEL_PROVIDER="openai"
-MODEL_BASE_URL="https://api.opentyphoon.ai/v1"
-EMBEDDING_MODEL="bge-m3"
-```
-
-### 3. Backend Setup
-
-Synchronize dependencies using `uv`:
-
-```bash
-uv sync --no-group dev
-```
-
-Setup Ollama embeddings:
-```bash
-ollama pull bge-m3
-```
-
-Run the backend server:
-```bash
-cd capstone/backend
-python app.py
-```
-
-### 4. Frontend Setup
-
-```bash
+# Frontend
 cd capstone/frontend
 npm install
 npm run dev
 ```
 
-## 📝 Usage
+## 📝 Testing
 
-1. Open the frontend at `http://localhost:5173`.
-2. Access the API documentation at `http://localhost:8000/docs`.
-3. Use the management page to upload new documents for the RAG system.
+To run the automated test suite and verify the system's integrity:
+```bash
+PYTHONPATH=. uv run pytest
+```
 
-## ❤️ Credits
+## 🛠️ Project Structure
 
-- [Typhoon AI](https://opentyphoon.ai/) - LLM Provider.
-- [Prompt Engineer Guide](https://www.promptingguide.ai/) - Learning resources.
-- [LangChain](https://python.langchain.com/) - Framework for LLM development.
+- `capstone/backend`: FastAPI application, LangChain logic, and database management.
+- `capstone/frontend`: React (Vite) dashboard and chatbot interface.
+- `database`: SQLite for metadata and ChromaDB for vector storage.
+- `tests`: Pytest-based unit testing framework.
 
 ---
-Developed as part of the Capstone project in Automation Engineering.
+
+## 📜 Changelog
+
+Detailed records of all structural and feature updates can be found in the **[Changelog](CHANGELOG.md)**.
+
+---
+*Developed for the Automation Engineering program at KMITL.*
