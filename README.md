@@ -1,112 +1,110 @@
-# CapStone-Project
+# CapStone-Project: Automation Gen AI
 
-## Abstract
-This project is a part of Capstone project in Automation Engineering. That has a Goal that to create Automation Gen AI for answer question about subject and knowledge of Automation in KMITL.
-## Diagram
+[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?style=for-the-badge&logo=langchain&logoColor=white)](https://python.langchain.com/)
+[![Ollama](https://img.shields.io/badge/Ollama-000000?style=for-the-badge&logo=ollama&logoColor=white)](https://ollama.com/)
 
-![image](/imgs/Workflow.png)
+An advanced Automation-focused Generative AI system designed to provide expert knowledge in Automation Engineering at KMITL. This project leverages an Agentic RAG (Retrieval-Augmented Generation) architecture to deliver accurate, refined, and context-aware answers.
 
-## Setup Project
-### Download Project repository
-1. Install git bash [Click me](https://git-scm.com/downloads) !!
-2. Git clone repository
-```
+## 🚀 Key Features
+
+- **Agentic RAG**: Implements a sophisticated LangGraph workflow for intelligent document retrieval and answer refinement.
+- **Multi-Source Knowledge**: Combines local vector database (ChromaDB) retrieval with live web searching (Google/DuckDuckGo) when local data is insufficient.
+- **Smart Grading**: Automatically evaluates the relevance of retrieved documents before generating answers.
+- **Integrated Dashboard**: Monitor system performance, query logs, and time usage.
+- **Document Management**: Manage and process knowledge source documents for the RAG system.
+- **Modern UI**: A responsive and intuitive frontend built with React and Vite.
+
+## 🏗️ Architecture
+
+The backend utilizes **LangGraph** to manage the AI's decision-making process:
+1. **Retrieval**: Searches the local vector store for relevant Automation Engineering documents.
+2. **Grading**: Uses an LLM to determine if the retrieved context is sufficient.
+3. **Web Search**: If context is missing, the agent triggers a web search (Google/DuckDuckGo).
+4. **Generation**: Synthesizes a comprehensive answer from all available sources.
+5. **Refinement**: Polishes the final response for clarity and technical accuracy.
+
+![Workflow](/imgs/Workflow.png)
+
+## 🛠️ Tech Stack
+
+- **Backend**: FastAPI, LangChain, LangGraph, Uvicorn, SQLAlchemy.
+- **Frontend**: React, Vite, Tailwind CSS (optional), NPM.
+- **AI/ML**: Ollama (Local Embeddings/LLMs), OpenTyphoon (Cloud LLM), Google Search API.
+- **Database**: SQLite (Logs/Management), ChromaDB (Vector Store).
+- **Environment**: UV (Fast Python package manager).
+
+## 📥 Getting Started
+
+### Prerequisites
+
+- [Python 3.10+](https://www.python.org/downloads/)
+- [Node.js & NPM](https://nodejs.org/en)
+- [Ollama](https://ollama.com/download)
+- [UV](https://docs.astral.sh/uv/getting-started/installation/) (Recommended for backend)
+
+### 1. Clone the Repository
+
+```bash
 git clone https://github.com/santapong/CapStone-Project.git
+cd CapStone-Project
 ```
 
-### Install Python
-1. Install Python [Click me](https://www.python.org/downloads/) !!
+### 2. Configure Environment Variables
 
-### Install Nodejs
-1. Install From [download here](https://nodejs.org/en) !!
+Create a `.env` file in the root directory based on `.envExample`:
 
-### OLLAMA download
-1. Download and install ollama [click Here](https://ollama.com/download/windows) !!
-
-2. Open Terminal or Command prompt and type 
-``` 
-ollama pull bge-m3
-``` 
-
-### Config .env file
-1. see [.envExample](https://github.com/santapong/CapStone-Project/blob/main/.envExample)
-2. Require Parameter.
-```
-PYTHONPATH = "Your project directory"
-
-LANGSMITH_API_KEY = "Your Langsmith API key"
-TYPHOON_API_KEY = "Your Typhoon API key"
-GOOGLE_CSE_ID = "GOOGLE Custom Search"
-GOOGLE_API_KEY = "Google API Key"
-
+```env
+PYTHONPATH="."
+LANGSMITH_API_KEY="your_key"
+TYPHOON_API_KEY="your_key"
+GOOGLE_CSE_ID="your_google_custom_search_engine_id"
+GOOGLE_API_KEY="your_google_api_key"
+LLM_MODEL="typhoon-v1.5x-70b-instruct"
+MODEL_PROVIDER="openai"
+MODEL_BASE_URL="https://api.opentyphoon.ai/v1"
+EMBEDDING_MODEL="bge-m3"
 ```
 
-LANGSMITH_API_KEY >> [Get Key](https://docs.smith.langchain.com/administration/how_to_guides/organization_management/create_account_api_key)
-TYPHOON_API_KEY >> [Get Key](https://playground.opentyphoon.ai/api-key) 
-GOOGLE_CSE_ID >> [Get Key](https://developers.google.com/custom-search/v1/introduction)
-GOOGLE_API_KEY >> [Get Key](https://developers.google.com/maps/documentation/javascript/get-api-key#create-api-keys)
+### 3. Backend Setup
 
-## For backend.
+Synchronize dependencies using `uv`:
 
-### Install uv
-
-1. Installing uv
-
-##### For Window
-```
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-
-##### For Linux/MacOs
-via curl
-```
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-via wget
-```
-wget -qO- https://astral.sh/uv/install.sh | sh
-```
-
-2. debug uv 
-
-```
-uv --version
-# uv x.x.x >> example [ uv 5.3.0 ]
-```
-
-3. Sync dependecy from project.toml in this project
-
-```
-cd path/to/this/project
+```bash
 uv sync --no-group dev
 ```
-PS. uv's document [click me](https://docs.astral.sh/uv/getting-started/installation/)
 
-## For frontend.
-1. go to frontend path
-```
-cd ../capstone/frontend
+Setup Ollama embeddings:
+```bash
+ollama pull bge-m3
 ```
 
-2. install package
-```
-npm install # If Error occur just run it again
+Run the backend server:
+```bash
+cd capstone/backend
+python app.py
 ```
 
-3. run frontend server
-```
+### 4. Frontend Setup
+
+```bash
+cd capstone/frontend
+npm install
 npm run dev
 ```
 
-## Error
-1. Execution policy. ( Window )
+## 📝 Usage
 
-```
-# (Powershell) 
-Set-ExecutionPolicy RemoteSigned -Scope CurrentUser 
-```
+1. Open the frontend at `http://localhost:5173`.
+2. Access the API documentation at `http://localhost:8000/docs`.
+3. Use the management page to upload new documents for the RAG system.
 
-## Thank you
-[Typhoon ai](https://opentyphoon.ai/)
-[Prompt Engineer Guide](https://www.promptingguide.ai/introduction/settings)
-[Langchain](https://python.langchain.com/docs/introduction/)
+## ❤️ Credits
+
+- [Typhoon AI](https://opentyphoon.ai/) - LLM Provider.
+- [Prompt Engineer Guide](https://www.promptingguide.ai/) - Learning resources.
+- [LangChain](https://python.langchain.com/) - Framework for LLM development.
+
+---
+Developed as part of the Capstone project in Automation Engineering.

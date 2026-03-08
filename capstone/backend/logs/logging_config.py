@@ -1,26 +1,21 @@
 import logging
-import os
-from dotenv import load_dotenv
 
-load_dotenv()
-logging.getLogger(__name__)
-
-LOG_PATH = os.getenv('LOG_PATH', 'app.log')  # Default log path
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()  # Default log level
-LOG_FORMAT = os.getenv('LOG_FORMAT', '%(asctime)s - %(name)s - %(levelname)s - %(message)s')  # Default format
+from capstone.backend.config import settings
 
 def setup_logging():
-    """ Configure the logging system for the application. """
-    # Set up logging configuration
+    """Configure the logging system for the application."""
     logging.basicConfig(
-        level=LOG_LEVEL,  # Set logging level (INFO, DEBUG, etc.)
-        format=LOG_FORMAT,
+        level=settings.LOG_LEVEL.upper(),
+        format=settings.LOG_FORMAT,
         handlers=[
-            logging.FileHandler(LOG_PATH),  # Write logs to a file
-            logging.StreamHandler()  # Optional: log to console as well
+            logging.FileHandler(settings.LOG_PATH),
+            logging.StreamHandler()
         ]
     )
-    logging.info("Logging initialized successfully.")
 
-    # Suppress unwanted log messages from specific libraries like watchfiles
+    # Suppress unwanted log messages from specific libraries
     logging.getLogger("watchfiles.main").setLevel(logging.WARNING)
+    logging.getLogger("uvicorn.error").setLevel(logging.INFO)
+    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+
+    logging.info("Logging initialized successfully.")

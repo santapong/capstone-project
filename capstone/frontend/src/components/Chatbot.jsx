@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { FaRobot } from "react-icons/fa";
-import axios from "axios";
+import apiClient from "../api/api_client";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -64,7 +64,7 @@ export default function Chatbot() {
 
     setLoading(true);
     try {
-      const response = await axios.post("http://localhost:8000/chatbot/infer", {
+      const response = await apiClient.post("/chatbot/infer", {
         question: message,
       });
       const botReply = response.data.answer || "ขออภัย ฉันไม่เข้าใจคำถามของคุณ";

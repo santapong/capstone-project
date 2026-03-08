@@ -1,28 +1,20 @@
+import os
 import time
 import logging
-import os
 
-# Import to use Event of SQLalchemy
-import capstone.backend.database.events
-
-from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
 
-from capstone.backend.llms import get_RAG, RAGModel, get_agent, Garph
+from capstone.backend.llms import get_agent
 from capstone.backend.api.models import (
     ChatModel,
     ResponseModel,
 )
-from capstone.backend.database.connection import (
-    DBConnection, 
-    get_db,
-)
+from capstone.backend.database.connection import get_db
 from capstone.backend.database.models import LogsTable
 from capstone.backend.llms.prompts import rag_prompt
 
-load_dotenv()
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 tags = ["Chatbot"]
@@ -32,7 +24,7 @@ router_chatbot = APIRouter(prefix='/chatbot', tags=tags)
 async def inference_Model(
     request: ChatModel, 
     agent = Depends(get_agent),
-    db: DBConnection = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     start_time = time.time()
     
@@ -42,14 +34,15 @@ async def inference_Model(
         logger.info(f"Time usage: {time_usage}s")
 
         # Insert successful response into database
-        db.insert(
-            table=LogsTable,
+        new_log = LogsTable(
             llm_model=os.getenv("LLM_MODEL"),
             prompt=rag_prompt.__name__, 
             question=request.question, 
             answer=answer['refine'], 
             time_usage=time_usage
         )
+        db.add(new_log)
+        db.commit()
 
         return JSONResponse(content={
             "time usage": time_usage,
@@ -60,16 +53,17 @@ async def inference_Model(
     except Exception as e:
         time_usage = time.time() - start_time
         error_message = str(e)
-        logger.error(f"Error occurred: {error_message}")
+        logger.error(f"Error occurred: {error_message}", exc_info=True)
 
         # Insert error details into database
-        db.insert(
-            table=LogsTable,
+        error_log = LogsTable(
             llm_model=os.getenv("LLM_MODEL"),
             prompt=rag_prompt.__name__,
             question=request.question,
             answer="ERROR", 
             time_usage=time_usage
         )
+        db.add(error_log)
+        db.commit()
 
         raise HTTPException(status_code=500, detail="An error occurred while processing your request.")
