@@ -53,9 +53,10 @@ class RAGModel:
         return self.__vector_store
 
     def __chroma_connect(self):
-        return Chroma( 
+        ollama_base_url = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+        return Chroma(
             collection_name=COLLECTION_NAME,
-            embedding_function=OllamaEmbeddings(model=EMBEDDING_MODEL),
+            embedding_function=OllamaEmbeddings(model=EMBEDDING_MODEL, base_url=ollama_base_url),
             persist_directory=PERSIST_DIR
             # **client_settings
             )

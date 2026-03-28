@@ -60,7 +60,8 @@ class AgenticModel(RAGModel):
         
         # Setting Embedding model.
         self.embedding = OllamaEmbeddings(
-            model=os.getenv("EMBEDDING_MODEL", default='bge-m3')
+            model=os.getenv("EMBEDDING_MODEL", default='bge-m3'),
+            base_url=os.getenv("OLLAMA_HOST", "http://localhost:11434")
         )
         
     # Intialize Model internal method
