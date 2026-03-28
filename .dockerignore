@@ -1,0 +1,17 @@
+__pycache__
+*.pyc
+.env
+.env.production
+.git
+.gitignore
+node_modules
+*.egg-info
+dist
+.venv
+database/vector_history/*
+database/history_database/*
+capstone/frontend/node_modules
+capstone/frontend/dist
+*.log
+.ruff_cache
+.pytest_cache

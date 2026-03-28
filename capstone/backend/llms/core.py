@@ -3,14 +3,13 @@ import logging
 
 from uuid import uuid4
 from typing import (
-    List, 
-    Union, 
+    List,
+    Union,
     Dict,
     )
 
-from langchain_chroma import Chroma
 from langchain_openai import ChatOpenAI
-from langchain_ollama import OllamaEmbeddings 
+from langchain_ollama import OllamaEmbeddings
 from langchain_core.documents import Document
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
@@ -19,6 +18,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from capstone.backend.llms.prompts import (
     rag_prompt,
     )
+from capstone.backend.config import settings
 
 logging.getLogger(__name__)
 
@@ -29,18 +29,51 @@ COLLECTION_NAME = os.getenv("COLLECTION_NAME",default="langchain")
 MODEL_BASE_URL = os.getenv("MODEL_BASE_URL")
 API_KEY = os.getenv("TYPHOON_API_KEY")
 
-# Persist Directory
+# Persist Directory (for ChromaDB fallback)
 PERSIST_DIR = os.getenv("PERSIST_DIR",default="database/vector_history")
 
+# Ollama base URL
+OLLAMA_BASE_URL = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 
-# Need to change the name to Vector Database
+
+def _create_embeddings():
+    """Create the embedding function."""
+    return OllamaEmbeddings(model=EMBEDDING_MODEL, base_url=OLLAMA_BASE_URL)
+
+
+def _create_vector_store(embeddings):
+    """Create vector store - uses PGVector if DATABASE_URL is set, otherwise ChromaDB."""
+    database_url = settings.sqlalchemy_database_url
+
+    if database_url and not database_url.startswith("sqlite"):
+        # Use PGVector with PostgreSQL
+        from langchain_postgres import PGVector
+
+        return PGVector(
+            embeddings=embeddings,
+            collection_name=COLLECTION_NAME,
+            connection=database_url,
+            use_jsonb=True,
+        )
+    else:
+        # Fallback to ChromaDB for local development
+        from langchain_chroma import Chroma
+
+        return Chroma(
+            collection_name=COLLECTION_NAME,
+            embedding_function=embeddings,
+            persist_directory=PERSIST_DIR,
+        )
+
+
 # RAG Class model.
 class RAGModel:
     def __init__(
             self,
             temperature: float = 0.5
             ):
-        self.__vector_store = self.__chroma_connect()
+        self.__embeddings = _create_embeddings()
+        self.__vector_store = _create_vector_store(self.__embeddings)
         self.__llm = ChatOpenAI(
             base_url=MODEL_BASE_URL,
             model=LLM_MODEL,
@@ -52,14 +85,6 @@ class RAGModel:
     def get_vector_store(self):
         return self.__vector_store
 
-    def __chroma_connect(self):
-        return Chroma( 
-            collection_name=COLLECTION_NAME,
-            embedding_function=OllamaEmbeddings(model=EMBEDDING_MODEL),
-            persist_directory=PERSIST_DIR
-            # **client_settings
-            )
-
     # Internal Split Text
     def __split_text(self,
                     metadatas,
@@ -67,7 +92,7 @@ class RAGModel:
                     chunk_size:int = 4096,
                     separaters: str ='/n',
                     ):
-        
+
         # Splitter text API contents.
         splitter = RecursiveCharacterTextSplitter(
             chunk_size = chunk_size,
@@ -75,10 +100,10 @@ class RAGModel:
             separators=separaters
             )
         texts =  splitter.split_text(contents)
-        
+
         # Generate Metadata
         generate_metadata = [ metadatas[0] for _ in range(len(texts)) ]
-        
+
         # Create Document from Text.
         documents = splitter.create_documents(
             texts=texts,
@@ -92,16 +117,16 @@ class RAGModel:
                   metadatas,
                   contents:Union[Dict[str,str],str],
                   )-> List[Document]:
-        
+
         # Split text from API
         documents = self.__split_text(
             contents=contents,
             metadatas=metadatas
             )
-        
+
         # Add Metadata for documents.
         ids = [str(uuid4()) for _ in range(len(documents))]
-        
+
         # Add Document to Vector store.
         metadata = self.__vector_store.add_documents(
             documents=documents,
@@ -112,7 +137,7 @@ class RAGModel:
 
     # Query to LLMs.
     def invoke(
-            self, 
+            self,
             question:str,
             ):
 
@@ -140,7 +165,7 @@ class RAGModel:
 
         return retrieval_chains.invoke({"question": question,"input":question})
 
-# Make for FastAPI Depends 
+# Make for FastAPI Depends
 def get_RAG():
     yield RAGModel()
 

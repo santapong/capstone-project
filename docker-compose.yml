@@ -1,0 +1,78 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: capstone-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - PYTHONPATH=/app
+      - DATABASE_URL=postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+      - LOG_PATH=/app/data/logs/app.log
+      - OLLAMA_HOST=http://ollama:11434
+    volumes:
+      - log_data:/app/data/logs
+    ports:
+      - "8000:8000"
+    depends_on:
+      ollama-init:
+        condition: service_completed_successfully
+    networks:
+      - capstone-net
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        # Nginx proxies /api/* to backend, so frontend uses /api
+        VITE_API_URL: ${VITE_API_URL:-/api}
+    container_name: capstone-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - capstone-net
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: capstone-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - capstone-net
+
+  # One-shot service to pull the embedding model on first deploy
+  ollama-init:
+    image: curlimages/curl:latest
+    container_name: capstone-ollama-init
+    depends_on:
+      ollama:
+        condition: service_started
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Waiting for Ollama..."
+        until curl -sf http://ollama:11434/api/tags > /dev/null 2>&1; do
+          sleep 3
+        done
+        echo "Pulling embedding model: ${EMBEDDING_MODEL:-bge-m3}..."
+        curl -sf http://ollama:11434/api/pull -d '{"name":"${EMBEDDING_MODEL:-bge-m3}"}' | head -5
+        echo "Embedding model ready."
+    networks:
+      - capstone-net
+
+volumes:
+  log_data:
+  ollama_data:
+
+networks:
+  capstone-net:
+    driver: bridge
