@@ -10,11 +10,9 @@ services:
     environment:
       - PYTHONPATH=/app
       - DATABASE_URL=postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
-      - PERSIST_DIR=/app/data/vector_history
       - LOG_PATH=/app/data/logs/app.log
       - OLLAMA_HOST=http://ollama:11434
     volumes:
-      - vector_data:/app/data/vector_history
       - log_data:/app/data/logs
     ports:
       - "8000:8000"
@@ -72,7 +70,6 @@ services:
       - capstone-net
 
 volumes:
-  vector_data:
   log_data:
   ollama_data:
 

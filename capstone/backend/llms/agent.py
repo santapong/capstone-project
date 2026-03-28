@@ -20,7 +20,7 @@ from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
 from langgraph.graph import END, StateGraph, START
 from langgraph.graph.state import CompiledStateGraph
 
-from capstone.backend.llms.core import RAGModel
+from capstone.backend.llms.core import RAGModel, _create_embeddings
 from capstone.backend.llms.utils import register_tool
 from capstone.backend.llms.prompts import (
     rag_prompt, 
@@ -59,10 +59,7 @@ class AgenticModel(RAGModel):
         ]
         
         # Setting Embedding model.
-        self.embedding = OllamaEmbeddings(
-            model=os.getenv("EMBEDDING_MODEL", default='bge-m3'),
-            base_url=os.getenv("OLLAMA_HOST", "http://localhost:11434")
-        )
+        self.embedding = _create_embeddings()
         
     # Intialize Model internal method
     def __init_model(
