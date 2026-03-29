@@ -12,7 +12,7 @@ from langchain.chat_models import init_chat_model
 from langchain.tools.retriever import create_retriever_tool
 
 from langchain_ollama import OllamaEmbeddings 
-from langchain_google_community import GoogleSearchAPIWrapper
+from duckduckgo_search import DDGS
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
@@ -70,10 +70,12 @@ class AgenticModel(RAGModel):
             model_base_url: str = os.getenv("MODEL_BASE_URL")
         ):
         return init_chat_model(
-                model=llm_model, 
-                model_provider=model_provider, 
+                model=llm_model,
+                model_provider=model_provider,
                 temperature=temperature,
                 base_url=model_base_url,
+                api_key=os.getenv("TYPHOON_API_KEY"),
+                max_tokens=32768,
             )   
         
     # Not use
@@ -100,28 +102,26 @@ class AgenticModel(RAGModel):
         
         return tool
     
-    # Google search method.
+    # Web search method using DuckDuckGo (no API key needed).
     def google_search(
         self,
         query,
         top_k,
         ):
-        
-        # Get API Wrapper from Google
-        wrapper = GoogleSearchAPIWrapper(
-            google_cse_id=os.getenv("GOOGLE_CSE_ID"), # Custom Search Engine ID
-            google_api_key=os.getenv("GOOGLE_API_KEY"), # Google API KEY
-        )
-        
-        # lambda function to create list of document
-        result = lambda query, top_k: list(wrapper.results(query=query, num_results=top_k))
-        links = [
-            result["link"] for result in result(query=query, top_k=top_k) 
+        from langchain_core.documents import Document
+
+        # Search using DuckDuckGo and return snippets (not full pages)
+        with DDGS() as ddgs:
+            results = list(ddgs.text(query, max_results=top_k))
+
+        documents = [
+            Document(
+                page_content=r.get("body", ""),
+                metadata={"source": r.get("href", ""), "title": r.get("title", "")}
+            )
+            for r in results
         ]
-        
-        # Load Document from links.
-        documents = WebBaseLoader(web_paths=links).load()
-        
+
         return documents
         
         
@@ -148,14 +148,19 @@ class AgenticModel(RAGModel):
         question = state["question"]
         documents = state["documents"]
         
-        # Set structure of output > yes or no.
-        structured_llm_grader = self.llm.with_structured_output(GradeDocuments)
-        
         # Grader Chain
-        retrieval_grader = decision_prompt | structured_llm_grader # This format call LCEL (LangChain Expression Language)
-        
+        retrieval_grader = decision_prompt | self.llm # This format call LCEL (LangChain Expression Language)
+
         # Result expected {"binary_score": "yes"}
-        response = retrieval_grader.invoke({"question": question, "context": documents})
+        raw_response = retrieval_grader.invoke({"question": question, "context": documents})
+
+        # Parse response - Typhoon may wrap JSON in markdown fences
+        import re, json
+        content = raw_response.content.strip()
+        json_match = re.search(r'```(?:json)?\s*(.*?)\s*```', content, re.DOTALL)
+        if json_match:
+            content = json_match.group(1)
+        response = GradeDocuments(**json.loads(content))
         
         return {"web_search": response}
 
@@ -173,7 +178,7 @@ class AgenticModel(RAGModel):
         # Retrieval
         documents = self.vector_store.similarity_search_with_score(
             query=question,
-            k=13
+            k=5
         )
         
         return {"documents": documents, "question": question}
@@ -211,9 +216,13 @@ class AgenticModel(RAGModel):
         question = state["question"]
         web_result = []
         
-        # Using Google Search.
-        documents = self.google_search(query=question, top_k=3)
-        web_result.append(documents)
+        # Using Web Search (DuckDuckGo).
+        try:
+            documents = self.google_search(query=question, top_k=3)
+            web_result.append(documents)
+        except Exception as e:
+            logging.warning(f"Web search failed (rate limit or error): {e}")
+            # Return empty results — generate_agent will fall back to RAG documents
         
         return {"web_result": web_result}
         
@@ -241,9 +250,13 @@ class AgenticModel(RAGModel):
             
         elif web_search.binary_score == "no":
             # If document not sufficient to Answer it will Add more search result to answer.
-            logging.info("----Using Search.----")
-            web_result = state["web_result"]
-            filled_document: List[str] = web_result
+            web_result = state.get("web_result", [])
+            if web_result and any(web_result):
+                logging.info("----Using Search.----")
+                filled_document: List[str] = web_result
+            else:
+                logging.info("----Web search empty, falling back to RAG.----")
+                filled_document: List[str] = state["documents"]
 
         # Query To LLM
         response = rag_chain.invoke({"context": filled_document, "question":question})

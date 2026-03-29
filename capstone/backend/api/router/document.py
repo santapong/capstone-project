@@ -7,6 +7,8 @@ import time
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 from pypdf import PdfReader
+from pdf2image import convert_from_bytes
+import pytesseract
 from sqlalchemy.orm import Session
 
 from capstone.backend.api.models import DocumentModel, FileLength
@@ -35,29 +37,29 @@ async def upload_Docs(
 
         # Read PDF Files.
         content = await file.read()
+
+        # Get total page count using PdfReader (lightweight)
         pdf_file = io.BytesIO(content)
         reader = PdfReader(pdf_file)
+        total_pages = len(reader.pages)
 
         # IF start page = final page and zero must extract all.
         if (interval.start_page == interval.final_page) and (
             interval.start_page == 0 and interval.final_page == 0
         ):
-            # Make to extract all data.
-            interval.start_page = 1  # first_page = 1 in PDF
-            interval.final_page = len(reader.pages)
-            logger.info("Receive start_page = 0 and final_page = 0 >> Set inteval to extract all")
+            interval.start_page = 1
+            interval.final_page = total_pages
+            logger.info("Receive start_page = 0 and final_page = 0 >> Set interval to extract all")
 
         # IF start_page != 0 and final_page > max_page or == 0
         elif (interval.start_page != 0) and (
-            (interval.final_page > len(reader.pages)) or (interval.final_page == 0)
+            (interval.final_page > total_pages) or (interval.final_page == 0)
         ):
-            # Set final page to Extract all page.
-            interval.final_page = len(reader.pages)
-            logger.info(f"Set final_page = {len(reader.pages)} >> Set to extract all from start_page")
+            interval.final_page = total_pages
+            logger.info(f"Set final_page = {total_pages} >> Set to extract all from start_page")
 
         # IF start_page == 0 and final_page != 0
         elif interval.start_page == 0 and interval.final_page != 0:
-            # Set start_page = 1
             interval.start_page = 1
             logger.info("Set start_page = 1")
 
@@ -65,19 +67,21 @@ async def upload_Docs(
         elif interval.start_page > interval.final_page:
             raise HTTPException(422, f"The interval that given {interval} is not good.")
 
-        # Specific target page to extract
-        target_interval = [
-            target for target in range(interval.start_page - 1, interval.final_page)
-        ]
-        logger.info(f"Extract {target_interval}")
+        logger.info(f"Extract pages {interval.start_page} to {interval.final_page}")
 
-        # Prepare Temp Varr.
+        # Convert only the needed pages to images (much faster for large PDFs)
+        images = convert_from_bytes(
+            content,
+            first_page=interval.start_page,
+            last_page=interval.final_page,
+        )
+
+        # OCR each page using pytesseract (Thai + English)
         contents = ""
-
-        # Extract contents from each page
-        for page in reader.pages:
-            if page.page_number in target_interval:
-                contents += page.extract_text()
+        for i, image in enumerate(images):
+            page_text = pytesseract.image_to_string(image, lang="tha+eng")
+            contents += page_text
+            logger.info(f"OCR page {interval.start_page + i}/{interval.final_page} done")
 
         metadatas = [{"source": file.filename}]
 
@@ -91,8 +95,9 @@ async def upload_Docs(
             embedding_model=EMBEDDING_MODEL,
             document_name=file.filename,
             time_usage=time_usage,
-            pages=len(target_interval),
+            pages=interval.final_page - interval.start_page + 1,
         )
+        logger.info(f"OCR upload complete: {file.filename}, {interval.final_page - interval.start_page + 1} pages, {time_usage:.1f}s")
         db.add(new_doc)
         db.commit()
 
