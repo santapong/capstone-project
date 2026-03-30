@@ -19,14 +19,14 @@ FROM
 TOP_USER_TIME = """
 WITH rename_recast as(
 
-SELECT 
+SELECT
 	id
 	,llm_model
 	,prompt
 	,question
 	,answer
 	,time_usage
-	,strftime('%F', datetime) as datetime
+	,CAST(datetime AS DATE) as date
 from
 	logs
 ),
@@ -34,12 +34,12 @@ count_usage as(
 
 SELECT
 	COUNT(*) as usage
-	,datetime
-from 
+	,date
+from
 	rename_recast
 group by
-	datetime
-order by 
+	date
+order by
     usage DESC
 )
 
@@ -75,22 +75,22 @@ SELECT * FROM logs
 
 ERROR_PERCENTAGE="""
 WITH count_error as(
-Select 
-	count(answer) as answer 
+Select
+	count(answer) as answer
 	-- Count Error
 	,count(
-	CASE 
-	WHEN LOWER(answer) like "er%" THEN 1
+	CASE
+	WHEN LOWER(answer) like 'er%' THEN 1
 	END
 	) as error
-from 
+from
 	logs
 ), final as(
-Select 
-	ROUND((answer - error) / CAST(answer as FLOAT), 4)*100 as diff
+Select
+	ROUND((answer - error) / answer::numeric, 4)*100 as diff
 	,error
 	,answer
-from 
+from
 	count_error
 )
 
@@ -99,13 +99,13 @@ select * from final
 
 UPLOAD_PAGE="""
 WITH SUM_TABLE as(
-SELECT 
+SELECT
 	SUM(pages) as pages
-	,ROUND(SUM(time_usage), 2) as times
-FROM DOCUMENTs
+	,ROUND(SUM(time_usage)::numeric, 2) as times
+FROM documents
 ), FINAL as(
-SELECT 
-	ROUND((times/pages), 2) as time_usage_per_page
+SELECT
+	ROUND((times/pages)::numeric, 2) as time_usage_per_page
 FROM
 	SUM_TABLE
 )
