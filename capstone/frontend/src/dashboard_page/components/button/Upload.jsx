@@ -21,7 +21,7 @@ const Upload = () => {
     formData.append("file", selectedFile);  // Append the file
 
     try {
-      const response = await fetch("http://localhost:8000/document/upload_multiple", {
+      const response = await fetch("/api/document/upload_multiple", {
         method: "POST",
         body: formData,  // Send the FormData with the file
       });

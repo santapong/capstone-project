@@ -14,7 +14,7 @@ export default function Chatbot() {
 
     setLoading(true);
     try {
-      const response = await axios.post("https://localhost:8000/chatbot/infer", {
+      const response = await axios.post("/api/chatbot/infer", {
         question: message,
       });
       const botReply = response.data.answer || "ขออภัย ฉันไม่เข้าใจคำถามของคุณ";

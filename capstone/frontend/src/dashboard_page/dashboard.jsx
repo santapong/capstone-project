@@ -9,7 +9,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch("http://localhost:8000/dashboard/query");
+        const response = await fetch("/api/dashboard/query");
         if (!response.ok) {
           throw new Error("Failed to fetch data");
         }

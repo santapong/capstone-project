@@ -3,7 +3,7 @@ import axios from "axios";
 // Standardizing API client for the application
 const apiClient = axios.create({
   // Use environment variable for base URL, fallback to localhost for development
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000",
+  baseURL: import.meta.env.VITE_API_URL || "/api",
   headers: {
     "Content-Type": "application/json",
   },
