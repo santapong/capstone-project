@@ -21,6 +21,7 @@ services:
         condition: service_completed_successfully
     networks:
       - capstone-net
+      - dokploy-network
 
   frontend:
     build:
@@ -76,3 +77,5 @@ volumes:
 networks:
   capstone-net:
     driver: bridge
+  dokploy-network:
+    external: true

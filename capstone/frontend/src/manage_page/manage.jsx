@@ -8,12 +8,13 @@ function Manage() {
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState(null);
-  const API_URL = import.meta.env.VITE_API_URL
+  const API_URL = import.meta.env.VITE_API_URL || ""
   const API_PORT = import.meta.env.VITE_API_PORT
+  const BASE_URL = API_PORT ? `${API_URL}:${API_PORT}` : API_URL
 
   const fetchDocuments = async () => {
     try {
-      const res = await fetch(`${API_URL}:${API_PORT}/document/documents`);
+      const res = await fetch(`${BASE_URL}/document/documents`);
       const result = await res.json();
   
       // If result contains a 'data' key, extract the array
@@ -61,7 +62,7 @@ function Manage() {
     setLoading(true);
   
     try {
-      const response = await fetch(`${API_URL}:${API_PORT}/document/document`, {
+      const response = await fetch(`${BASE_URL}/document/document`, {
         method: "POST",
         body: formData,
       });
@@ -97,7 +98,7 @@ function Manage() {
     setDeleteLoading(true);
   
     try {
-      const response = await fetch(`${API_URL}:${API_PORT}/document/document`, {
+      const response = await fetch(`${BASE_URL}/document/document`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
